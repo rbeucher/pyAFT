@@ -4,6 +4,11 @@ from .utilities import drawbinom
 from .utilities import draw_from_distrib
 import pylab as plt
 import random
+import math
+from ctypes import *
+import os
+
+_ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 class Sample(object):
@@ -11,16 +16,14 @@ class Sample(object):
     def __init__(self, name):
         self.name = name
 
-
-
-class Synthetic(sample):
+class Synthetic(Sample):
 
     def __init__(self, nc=30, ntl=100, history=None):
         self.nc = nc
         self.ntl = ntl
         self.history = history
         if history:
-            self.ketcham_model(self.history)
+            self.ketcham_model()
             self.synthetic_counts()
             # Add noise
             self.synthetic_lengths()
@@ -39,7 +42,7 @@ class Synthetic(sample):
         # Process Fission Track Distribution
         # distribution range from 0 to 20 microns
         # We have 200 values.
-        fdist = data["Fission Track length distribution"]
+        vals, fdist = data["Fission Track length distribution"]
         probs = [i for i in fdist]
         
         self.AFT = data["Final Age"]
@@ -47,24 +50,44 @@ class Synthetic(sample):
         self.MTL = data["Mean Track Length"]
         self.TLD = fdist  
         self.reDensity = data["redDensity"]
-        print(data)
+        self.rho = self.reDensity
+        self.bins = vals
         return
 
     def synthetic_counts(self):
         data = generate_synthetic_counts(self.rho, self.nc)
         self.ns = data["Spontaneous tracks (Ns)"]
         self.ni = data["Induced tracks (Ni)"]
-        print("ns: %i".format(self.ns))
-        print("ni: %i".format(self.ni))
         return
 
     def synthetic_lengths(self):
-        self.tls = draw_from_distrib(self.bins, self.TLD)
-        print("TL: ", self.tls)
-
+        self.tls = draw_from_distrib(self.bins, self.TLD, self.ntl)
+        self.mtl = (float(sum(self.tls))/len(self.tls) 
+                    if len(self.tls) > 0 else float('nan'))
+        self.mtl_sd = np.std(self.tls)
 
     def write_mtx_file(self, filename):
         self.mtx = filename
+
+    def plot_predicted_TLD(self):
+        plt.plot(self.bins, self.TLD)
+        plt.xlabel("Length (microns)")
+        plt.ylabel("Density")
+    
+    def plot_history(self):
+        t = self.history.time
+        T = self.history.Temperature
+        plt.plot(t, T)
+        plt.ylim((max(T)+10, min(T)-10))
+        plt.xlim((max(t), min(t)))
+        plt.xlabel("time (Ma)")
+        plt.ylabel("Temperature (Celcius)")
+
+    def plot_track_histogram(self):
+        plt.hist(self.tls)
+        plt.xlim(0,20)
+        plt.xlabel("Length (microns)")
+        plt.ylabel("counts")
 
 
 
@@ -244,5 +267,7 @@ def project_fission_track():
     return
 
 
+def get_path(path):
+    return os.path.join(_ROOT, 'lib', path)
 
 
