@@ -1,3 +1,5 @@
+import numpy as np
+
 class Thermal_history(object):
     """Class defining a thermal history"""
 
@@ -7,6 +9,10 @@ class Thermal_history(object):
         self.name = name
         self.time = time
         self.Temperature = temperature
+        self.maxT = max(temperature)
+        self.minT = min(temperature)
+        self.totaltime = max(time) - min(time)
+        self.rate = np.diff(self.Temperature) / np.diff(self.time)
 
     def time_bp(self):
         self.time = abs(self.time - max(self.time))

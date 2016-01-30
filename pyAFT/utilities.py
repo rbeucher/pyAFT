@@ -1,6 +1,8 @@
 import numpy as np
 from scipy import stats
-from .annealing import LengthToDensity
+from .annealing import lengthToDensity
+from pyAFT.thermal_histories import Thermal_history 
+import random
 
 
 def drawbinom(I, prob):
@@ -25,10 +27,9 @@ def create_distribution(xk, pk, name="TLD"):
 def draw_from_distrib(vals, pdf, size=1):
     """Random Draw from given distribution
     """
-    TL = create_distribution(vals, pdf, name="TLD")
-    TL.random_state
-    return TL.rvs(size)
-
+    vals = np.array(vals)
+    distrib = stats.rv_discrete(values=(range(len(vals)), pdf))
+    return vals[distrib.rvs(size=size)]
 
 def AdjustTTHistory(time, temp):
     """Calculate adjusted thermal history
@@ -99,6 +100,10 @@ def interpolate_history_as_isothermal_intervals(tTpath):
     cutoff the maximum temperature step required is 8 C.  If the overall model
     time steps are too large, these more distant requirements may not be met.
     """
+    total_time = tTpath.totaltime 
+    rate = tTpath.rate
+    abs_rate = abs(rate)
+    def_timestep = total_time / 100.0
 
     return tTpath
 
@@ -122,16 +127,36 @@ def calculate_reduced_standard_deviation(redLength, project=True):
         return 0.4572 - 0.8815 * redLength + 0.4947 * redLength * redLength
 
 
-def calculate_track_length_distribution1():
+def calculate_track_length_distribution1(tTPath, kinpar, kinetic="Etch pit length"):
     """Calculates the model track length distribution for a given time-
     temperature history based on the calibration of Ketcham et al.
 
     c-axis-parallel length (Rcmod).
     """
+    def etch_pit_length(kinpar):
+        if kinpar <= 1.75:
+            return 0.84
+        elif kinpar >= 4.58:
+            return 0.0
+        else:
+            return 1.0 - np.exp(0.647 * (kinpar - 1.75) - 1.834)
+    
+    def cl_pfu(kinpar):
+        if(abs(kinpar - 1.0) <= 0.130):
+            return 0.0
+        else:
+            return 1.0 - np.exp(2.107 * (1.0 - abs(kinpar - 1.0)) - 1.834)
+
+    def oh_pfu(kinpar):
+        return 0.84 * (1.0 - pow(1.0 - (kinpar - 1.0), 4.5))
+
+
+    options = {"Etch pit length": etch_pit_length, "CL PFU": cl_pfu,
+            "OH PFU": oh_pfu}
 
     # Calculate rmr0 according to kinetic parameter
-   
-    rmr0 = 0.0
+    f = option[kinetic]
+    rmr0 = f(kinpar)
     k = 1.0 - rmr0
     # equivTotAnnLen is the length of the more resistant apatite
     # at the length of total annealing for the less resistant

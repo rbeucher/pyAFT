@@ -1,9 +1,96 @@
 import numpy as np
 from .parameters import MAXCOUNT
 from .utilities import drawbinom
+from .utilities import draw_from_distrib
 import pylab as plt
 import random
 
+
+class Sample(object):
+
+    def __init__(self, name):
+        self.name = name
+
+
+
+class Synthetic(sample):
+
+    def __init__(self, nc=30, ntl=100, history=None):
+        self.nc = nc
+        self.ntl = ntl
+        self.history = history
+        if history:
+            self.ketcham_model(self.history)
+            self.synthetic_counts()
+            # Add noise
+            self.synthetic_lengths()
+            # Add noise
+
+
+    def ketcham_model(self, alo=16.3):
+        """Return Apatite Fission Track Age (AFTA) and Track Length
+        distribution using Ketcham et al. 1999 annealing model.
+       
+        Parameter:
+        ---------
+        alo -- Initial track length
+        """
+        data = KetchamModel(self.history, alo=alo)
+        # Process Fission Track Distribution
+        # distribution range from 0 to 20 microns
+        # We have 200 values.
+        fdist = data["Fission Track length distribution"]
+        probs = [i for i in fdist]
+        
+        self.AFT = data["Final Age"]
+        self.Oldest_Age = data["Oldest Age"]
+        self.MTL = data["Mean Track Length"]
+        self.TLD = fdist  
+        self.reDensity = data["redDensity"]
+        print(data)
+        return
+
+    def synthetic_counts(self):
+        data = generate_synthetic_counts(self.rho, self.nc)
+        self.ns = data["Spontaneous tracks (Ns)"]
+        self.ni = data["Induced tracks (Ni)"]
+        print("ns: %i".format(self.ns))
+        print("ni: %i".format(self.ni))
+        return
+
+    def synthetic_lengths(self):
+        self.tls = draw_from_distrib(self.bins, self.TLD)
+        print("TL: ", self.tls)
+
+
+    def write_mtx_file(self, filename):
+        self.mtx = filename
+
+
+
+def write_mtx_files(filename, sample_name, FTage, FTage_error, TL, TLD, NS, NI,
+                    zeta, rhod):
+
+    f = open(filename, "w")
+    f.write("{name:s}\n".format(name=sample_name))
+    f.write("{value:s}\n".format(value=-999))
+    f.write("{nconstraints:d} {ntl:d} {nc:d} {zeta:f5.1} {rhod:f12.1} {totco:d}\n".format(
+            nconstraints=0, ntl=len(TL), nc=NS.size, zeta=zeta, rhod=rhod,
+            totco=2000))
+    f.write("{age:f5.1} {age_error:f5.1}\n".format(age=FTage,
+                                                   age_error=FTage_error))
+    f.write("{mtl:f5.1} {mtl_error:f5.1}\n".format(mtl=TL.mean,
+                                                   mtl_error=TL.mean*0.05))
+    f.write("{mtl_std:f5.1} {mtl_std_error:f5.1}\n".format(mtl_std=TL,
+                                                           mtl_std_error=TL))
+    for i in range(NS.size):
+        f.write("{ns:d} {ni:d}\n".format(ns=NS[i], ni=NI[i]))
+
+    for track in TL:
+        f.write("{tl:f4.1}\n".format(tl=track))
+
+    f.close()
+    return 0
 
 def generate_synthetic_counts(rho, Nc=30):
     """Generate Synthetic AFT data.
@@ -24,7 +111,6 @@ def generate_synthetic_counts(rho, Nc=30):
     Ns = np.array([drawbinom(I, prob) for I in NsNi])
     Ni = NsNi - Ns
     return {"Spontaneous tracks (Ns)": Ns, "Induced tracks (Ni)": Ni}
-
 
 def calculate_central_age(Ns, Ni, zeta, seZeta, rhod, seRhod, sigma=0.15):
     """Function to calculate central age."""
@@ -68,7 +154,6 @@ def calculate_pooled_age(Ns, Ni, zeta, seZeta, rhod, seRhod):
     
     return {"Pooled Age":t/1e6, "2 sigma Error": 2*se/1e6}
 
-
 def calculate_single_grain_ages(Ns, Ni, rhod, zeta, g=0.5, trf="Linear"):
     # Total Decay constant for 238U
     lbda = 1.55125e-10
@@ -77,16 +162,16 @@ def calculate_single_grain_ages(Ns, Ni, rhod, zeta, g=0.5, trf="Linear"):
     if (trf == "linear"):
         z = 1/lbda*log(1+g*zeta*lbda*rhod*(Ns/Ni))
         sez = z*np.sqrt(1/Ns + 1/Ni)
-        z0 = (sum(z/sez**2) / sum(1/sez**2)
+        z0 = sum(z/sez**2) / sum(1/sez**2)
 
     #Logarithmic transformation
-    if trf is "Log":
+    if trf == "Log":
         z = log(g*zeta*lbda*rhod*(Ns/Ni))
         sez = z*sqrt(1/Ns+1/Ni)
         z0 = log(g*zeta*lbda*rhod*(sum(Ns)/sum(Ni)))
     
     #Arcsine
-    if trf is "arcsine":
+    if trf == "arcsine":
         z = asin(sqrt((Ns+3/8)/(Ns+Ni+3/4)))
         sez = 1/(2*sqrt(Ns+Ni))
         z0 = asin(sqrt(sum(Ns)/sum(Ns+Ni)))
@@ -113,7 +198,6 @@ def radialplot(Ns, Ni, zeta, seZeta, rhoD, seRhoD):
     A = plt.plot(x, y, "o")
     return A
 
-
 def PlotPlot(age, error):
      
     # scale
@@ -121,11 +205,44 @@ def PlotPlot(age, error):
     ze = error
     z0 = sum(age / error**2) / sum(1 / error**2)      
 
+def KetchamModel(history, alo=16.3):
+    """Return Apatite Fission Track Age (AFTA) and Track Length
+    distribution using Ketcham et al. 1999 annealing model.
+   
+    Parameter:
+    ---------
+    history -- A Thermal history class instance
+    alo -- Initial track length
+    """
+    t = history.time
+    T = history.Temperature
 
+    A = cdll.LoadLibrary(get_path("libketcham.so"))
+    ketcham = A.ketch_main_
+    n = c_int(len(t))
+    n = pointer(n)
+    alo = c_double(alo)
+    t = (c_float*len(t))(*t)
+    T = (c_float*len(T))(*T)
+    alo = pointer(alo)
+    final_age = pointer(c_double())
+    oldest_age = pointer(c_double())
+    fmean = pointer(c_double())
+    fdist = (c_double*200)()
+    dx = 20. / 200.
+    redDensity = pointer(c_double())
+    ketcham(n, t, T, alo, final_age, oldest_age, fmean, fdist, redDensity)
+    return {"Final Age": final_age.contents.value,
+            "Oldest Age": oldest_age.contents.value,
+            "Mean Track Length": fmean.contents.value,
+            "Fission Track length distribution": (np.array([dx/2.0 +
+             dx*float(a) for a in range(200)]),np.array([i*dx for i in fdist])),
+            "redDensity": redDensity.contents.value}
 
-def project_fission_track()
+def project_fission_track():
     """Project fission track onto C-axis"""
     return
+
 
 
 
