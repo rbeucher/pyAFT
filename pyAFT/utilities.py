@@ -3,6 +3,7 @@ from scipy import stats
 from .annealing import lengthToDensity
 from pyAFT.thermal_histories import Thermal_history 
 import random
+import sys
 
 
 def drawbinom(I, prob):

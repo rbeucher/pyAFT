@@ -13,12 +13,33 @@ _ROOT = os.path.abspath(os.path.dirname(__file__))
 
 class Sample(object):
 
-    def __init__(self, name):
+    def __init__(self, name, counts=[], AFT=None, AFT_error=None,
+                 tls=[], zeta=None, rhod=None):
         self.name = name
+        self.counts = counts
+        self.nc = len(counts)
+
+        if counts:
+            self.ns, self.ni = [*zip(counts)]
+        
+        self.AFT = AFT
+        self.AFT_error = AFT_error
+        self.tls = tls
+        self.zeta = zeta
+        self.rhod = rhod
+
+    def write_mtx_file(self, filename):
+        write_mtx_file(filename, self.name, self.AFT, self.AFT_error, self.tls,
+                       self.ns, self.ni, self.zeta, self.rhod)
+
+
+                       
 
 class Synthetic(Sample):
 
-    def __init__(self, nc=30, ntl=100, history=None):
+    def __init__(self, name=None, nc=30, ntl=100, history=None):
+        Sample.__init__(self, name=name)
+        self.name = name
         self.nc = nc
         self.ntl = ntl
         self.history = history
@@ -58,6 +79,7 @@ class Synthetic(Sample):
         data = generate_synthetic_counts(self.rho, self.nc)
         self.ns = data["Spontaneous tracks (Ns)"]
         self.ni = data["Induced tracks (Ni)"]
+        self.counts=[*zip(self.ns, self.ni)]
         return
 
     def synthetic_lengths(self):
@@ -65,9 +87,6 @@ class Synthetic(Sample):
         self.mtl = (float(sum(self.tls))/len(self.tls) 
                     if len(self.tls) > 0 else float('nan'))
         self.mtl_sd = np.std(self.tls)
-
-    def write_mtx_file(self, filename):
-        self.mtx = filename
 
     def plot_predicted_TLD(self):
         plt.plot(self.bins, self.TLD)
@@ -91,7 +110,7 @@ class Synthetic(Sample):
 
 
 
-def write_mtx_files(filename, sample_name, FTage, FTage_error, TL, TLD, NS, NI,
+def write_mtx_file(filename, sample_name, FTage, FTage_error, TL, NS, NI,
                     zeta, rhod):
 
     f = open(filename, "w")
@@ -130,7 +149,7 @@ def generate_synthetic_counts(rho, Nc=30):
     # distribution, conditional on total counts Ns + Ni, sampled randomly with
     # a maximum of 1000.
     # Nc is the number of
-    NsNi = np.random.randint(0, MAXCOUNT, Nc)
+    NsNi = np.random.randint(5, MAXCOUNT, Nc)
     Ns = np.array([drawbinom(I, prob) for I in NsNi])
     Ni = NsNi - Ns
     return {"Spontaneous tracks (Ns)": Ns, "Induced tracks (Ni)": Ni}
