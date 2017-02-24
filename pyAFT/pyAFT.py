@@ -39,7 +39,8 @@ class Synthetic(Sample):
 
     def __init__(self, name=None, nc=30, ntl=100, history=None):
         Sample.__init__(self, name=name)
-        self.name = name
+        if not self.name:
+            self.name = "Synthetic"
         self.nc = nc
         self.ntl = ntl
         self.history = history
@@ -259,7 +260,8 @@ def KetchamModel(history, alo=16.3):
     t = history.time
     T = history.Temperature
 
-    A = cdll.LoadLibrary(get_path("libketcham.so"))
+    #A = cdll.LoadLibrary(get_path("libketcham.so"))
+    A = cdll.LoadLibrary(os.path.join(os.path.dirname(__file__),"..","ketcham.so"))
     ketcham = A.ketch_main_
     n = c_int(len(t))
     n = pointer(n)

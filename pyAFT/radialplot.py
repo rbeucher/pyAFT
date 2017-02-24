@@ -219,8 +219,6 @@ class Radialplot():
         newax.set_aspect(self.f)
 
 
-
-
 if __name__== "__main__":
 
     central = 100.

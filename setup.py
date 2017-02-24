@@ -1,4 +1,10 @@
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Extension
+
+
+module1 = Extension('ketcham',
+                    include_dirs=['include'],
+                    sources = ['./src/Ketcham.c'])
+
 
 setup(name='PyAFT',
       version='0.1',
@@ -9,5 +15,6 @@ setup(name='PyAFT',
       license='MIT',
       packages=find_packages(),
       zip_safe=False,
+      ext_modules=[module1]
       )
 
