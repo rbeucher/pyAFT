@@ -7,9 +7,10 @@ import random
 import math
 from ctypes import *
 import os
+import glob
 
 _ROOT = os.path.abspath(os.path.dirname(__file__))
-
+_KETCHAM_ = str(glob.glob(_ROOT+"/../ketcham*.so")[0])
 
 class Sample(object):
 
@@ -116,7 +117,7 @@ def write_mtx_file(filename, sample_name, FTage, FTage_error, TL, NS, NI,
 
     f = open(filename, "w")
     f.write("{name:s}\n".format(name=sample_name))
-    f.write("{value:s}\n".format(value=-999))
+    f.write("{value:s}\n".format(value=str(-999)))
     f.write("{nconstraints:d} {ntl:d} {nc:d} {zeta:f5.1} {rhod:f12.1} {totco:d}\n".format(
             nconstraints=0, ntl=len(TL), nc=NS.size, zeta=zeta, rhod=rhod,
             totco=2000))
@@ -260,8 +261,7 @@ def KetchamModel(history, alo=16.3):
     t = history.time
     T = history.Temperature
 
-    #A = cdll.LoadLibrary(get_path("libketcham.so"))
-    A = cdll.LoadLibrary(os.path.join(os.path.dirname(__file__),"..","ketcham.so"))
+    A = cdll.LoadLibrary(_KETCHAM_)
     ketcham = A.ketch_main_
     n = c_int(len(t))
     n = pointer(n)
