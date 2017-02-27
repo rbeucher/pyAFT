@@ -14,6 +14,7 @@ setup(name='PyAFT',
       author_email='romain.beucher@geo.uib.no',
       license='MIT',
       packages=find_packages(),
+      install_requires=['numpy','matplotlib'],
       zip_safe=False,
       ext_modules=[module1]
       )
