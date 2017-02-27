@@ -171,7 +171,7 @@ class Radialplot():
         
         # Add labels z-axis
         for index, label in enumerate(zip(self.xlab, self.ylab)):
-            ax.text(*label, "{}".format(self.ticks_values_major[index]))
+            ax.text(*(label+"{}".format(lab=self.ticks_values_major[index])))
         
         # Plot data
         ax.plot(self.se, self.z, marker="o", linestyle="")

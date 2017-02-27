@@ -8,28 +8,28 @@ double kinetic_par;
 int l0model;
 
 
-static PyObject *ketcham_model( PyObject *self, PyObject *args){
-    return Py_BuildValue("[i,i]", 1,2);
-}
-
-static PyMethodDef ketchamMethods[] = {
-    { "annealing", ketcham_model, METH_VARARGS, NULL},
-    {NULL, NULL, 0, NULL}
-};
-
-static struct PyModuleDef ketchammodule = {
-    PyModuleDef_HEAD_INIT,
-    "ketcham",
-    NULL,
-    -1,
-    ketchamMethods
-};
-
-PyMODINIT_FUNC
-PyInit_ketcham(void)
-{
-    return PyModule_Create(&ketchammodule);
-}
+//static PyObject *ketcham_model( PyObject *self, PyObject *args){
+//    return Py_BuildValue("[i,i]", 1,2);
+//}
+//
+//static PyMethodDef ketchamMethods[] = {
+//    { "annealing", ketcham_model, METH_VARARGS, NULL},
+//    {NULL, NULL, 0, NULL}
+//};
+//
+//static struct PyModuleDef ketchammodule = {
+//    PyModuleDef_HEAD_INIT,
+//    "ketcham",
+//    NULL,
+//    -1,
+//    ketchamMethods
+//};
+//
+//PyMODINIT_FUNC
+//PyInit_ketcham(void)
+//{
+//    return PyModule_Create(&ketchammodule);
+//}
 
 float main_he(int ntime,float He_time[],float He_temp[]);
 /* Variables declared globally */

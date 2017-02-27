@@ -10,7 +10,11 @@ import os
 import glob
 
 _ROOT = os.path.abspath(os.path.dirname(__file__))
-_KETCHAM_ = str(glob.glob(_ROOT+"/../ketcham*.so")[0])
+
+# This is a workaround to locate the shared library file.
+# File name is attributed at compile time.
+_KETCHAM_ = glob.glob(_ROOT+"/../ketcham*")
+_KETCHAM_ = [val for val in _KETCHAM_ if ".py" not in val][0]
 
 class Sample(object):
 
@@ -21,7 +25,8 @@ class Sample(object):
         self.nc = len(counts)
 
         if counts:
-            self.ns, self.ni = [*zip(counts)]
+            #self.ns, self.ni = [*zip(counts)]
+            self.ns, self.ni = list(zip(counts))
         
         self.AFT = AFT
         self.AFT_error = AFT_error
@@ -32,9 +37,6 @@ class Sample(object):
     def write_mtx_file(self, filename):
         write_mtx_file(filename, self.name, self.AFT, self.AFT_error, self.tls,
                        self.ns, self.ni, self.zeta, self.rhod)
-
-
-                       
 
 class Synthetic(Sample):
 
@@ -81,7 +83,8 @@ class Synthetic(Sample):
         data = generate_synthetic_counts(self.rho, self.nc)
         self.ns = data["Spontaneous tracks (Ns)"]
         self.ni = data["Induced tracks (Ni)"]
-        self.counts=[*zip(self.ns, self.ni)]
+        #self.counts=[*zip(self.ns, self.ni)]
+        self.counts=list(zip(self.ns, self.ni))
         return
 
     def synthetic_lengths(self):
@@ -109,8 +112,6 @@ class Synthetic(Sample):
         plt.xlim(0,20)
         plt.xlabel("Length (microns)")
         plt.ylabel("counts")
-
-
 
 def write_mtx_file(filename, sample_name, FTage, FTage_error, TL, NS, NI,
                     zeta, rhod):
@@ -286,7 +287,6 @@ def KetchamModel(history, alo=16.3):
 def project_fission_track():
     """Project fission track onto C-axis"""
     return
-
 
 def get_path(path):
     return os.path.join(_ROOT, 'lib', path)
